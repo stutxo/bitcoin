@@ -18,10 +18,12 @@ void RegisterMiningRPCCommands(CRPCTable &tableRPC);
 void RegisterNodeRPCCommands(CRPCTable&);
 void RegisterNetRPCCommands(CRPCTable&);
 void RegisterOutputScriptRPCCommands(CRPCTable&);
+void RegisterPokerRPCCommands(CRPCTable &tableRPC);
 void RegisterRawTransactionRPCCommands(CRPCTable &tableRPC);
 void RegisterSignMessageRPCCommands(CRPCTable&);
 void RegisterSignerRPCCommands(CRPCTable &tableRPC);
 void RegisterTxoutProofRPCCommands(CRPCTable&);
+
 
 static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
 {
@@ -32,8 +34,10 @@ static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
     RegisterNodeRPCCommands(t);
     RegisterNetRPCCommands(t);
     RegisterOutputScriptRPCCommands(t);
+    RegisterPokerRPCCommands(t);
     RegisterRawTransactionRPCCommands(t);
     RegisterSignMessageRPCCommands(t);
+ 
 #ifdef ENABLE_EXTERNAL_SIGNER
     RegisterSignerRPCCommands(t);
 #endif // ENABLE_EXTERNAL_SIGNER
