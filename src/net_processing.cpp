@@ -1071,6 +1071,7 @@ private:
 
     void AddAddressKnown(Peer& peer, const CAddress& addr) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     void PushAddress(Peer& peer, const CAddress& addr) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    bool CanServeBlocks(const Peer& peer) const;
 
     void LogBlockHeader(const CBlockIndex& index, const CNode& peer, bool via_compact_block);
 };
@@ -1129,8 +1130,9 @@ static void AddKnownTx(Peer& peer, const uint256& hash)
 }
 
 /** Whether this peer can serve us blocks. */
-static bool CanServeBlocks(const Peer& peer)
+bool PeerManagerImpl::CanServeBlocks(const Peer& peer) const
 {
+    if (m_opts.ignore_incoming_blocks) return false;
     return peer.m_their_services & (NODE_NETWORK|NODE_NETWORK_LIMITED);
 }
 
@@ -3451,6 +3453,17 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     PeerRef peer = GetPeerRef(pfrom.GetId());
     if (peer == nullptr) return;
 
+    if (m_opts.ignore_incoming_blocks &&
+        (msg_type == NetMsgType::HEADERS ||
+         msg_type == NetMsgType::CMPCTBLOCK ||
+         msg_type == NetMsgType::GETHEADERS ||
+         msg_type == NetMsgType::GETBLOCKS ||
+         msg_type == NetMsgType::GETBLOCKTXN ||
+         msg_type == NetMsgType::BLOCKTXN ||
+         msg_type == NetMsgType::BLOCK)) {
+        return;
+    }
+
     if (msg_type == NetMsgType::VERSION) {
         if (pfrom.nVersion != 0) {
             LogDebug(BCLog::NET, "redundant version message from peer=%d\n", pfrom.GetId());
@@ -3975,6 +3988,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         for (CInv& inv : vInv) {
             if (interruptMsgProc) return;
 
+            if (m_opts.ignore_incoming_blocks && (inv.IsMsgBlk() || inv.IsMsgCmpctBlk())) return;
             // Ignore INVs that don't match wtxidrelay setting.
             // Note that orphan parent fetching always uses MSG_TX GETDATAs regardless of the wtxidrelay setting.
             // This is fine as no INV messages are involved in that process.
