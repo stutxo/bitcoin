@@ -24,7 +24,7 @@ void ApplyArgsManOptions(const ArgsManager& argsman, PeerManager::Options& optio
 
     if (auto value{argsman.GetBoolArg("-blocksonly")}) options.ignore_incoming_txs = *value;
 
-    if (auto value{argsman.GetBoolArg("-txsonly")}) options.ignore_incoming_blocks = *value;
+    if (auto value{argsman.GetBoolArg("-transactionsonly")}) options.ignore_incoming_blocks = *value;
 }
 
 } // namespace node
