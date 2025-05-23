@@ -269,6 +269,9 @@ struct Peer {
     /** This peer's reported block height when we connected */
     std::atomic<int> m_starting_height{-1};
 
+    /** Whether we should relay blocks to this peer */
+    std::atomic<bool> m_relays_blocks{true};
+
     /** The pong reply we're expecting, or 0 if no pong expected. */
     std::atomic<uint64_t> m_ping_nonce_sent{0};
     /** When the last ping was sent, or 0 if no ping was ever sent */
@@ -1071,6 +1074,7 @@ private:
 
     void AddAddressKnown(Peer& peer, const CAddress& addr) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
     void PushAddress(Peer& peer, const CAddress& addr) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+    bool CanServeBlocks(const Peer& peer) const;
 
     void LogBlockHeader(const CBlockIndex& index, const CNode& peer, bool via_compact_block);
 };
@@ -1129,8 +1133,12 @@ static void AddKnownTx(Peer& peer, const uint256& hash)
 }
 
 /** Whether this peer can serve us blocks. */
-static bool CanServeBlocks(const Peer& peer)
+bool PeerManagerImpl::CanServeBlocks(const Peer& peer) const
 {
+    // If we are in -transactionsonly mode, we don't want to ask for blocks from peers.
+    if (m_opts.ignore_incoming_blocks) return false;
+    // If a peer is in -transactionsonly mode, we don't want to ask for blocks.
+    if (!peer.m_relays_blocks) return false;
     return peer.m_their_services & (NODE_NETWORK|NODE_NETWORK_LIMITED);
 }
 
@@ -1536,15 +1544,16 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
     uint64_t your_services{addr.nServices};
 
     const bool tx_relay{!RejectIncomingTxs(pnode)};
+    const bool block_relay{!m_opts.ignore_incoming_blocks};
     MakeAndPushMessage(pnode, NetMsgType::VERSION, PROTOCOL_VERSION, my_services, nTime,
             your_services, CNetAddr::V1(addr_you), // Together the pre-version-31402 serialization of CAddress "addrYou" (without nTime)
             my_services, CNetAddr::V1(CService{}), // Together the pre-version-31402 serialization of CAddress "addrMe" (without nTime)
-            nonce, strSubVersion, nNodeStartingHeight, tx_relay);
+            nonce, strSubVersion, nNodeStartingHeight, tx_relay, block_relay);
 
     if (fLogIPs) {
-        LogDebug(BCLog::NET, "send version message: version %d, blocks=%d, them=%s, txrelay=%d, peer=%d\n", PROTOCOL_VERSION, nNodeStartingHeight, addr_you.ToStringAddrPort(), tx_relay, nodeid);
+        LogDebug(BCLog::NET, "send version message: version %d, blocks=%d, them=%s, txrelay=%d, blockrelay=%d, peer=%d\n", PROTOCOL_VERSION, nNodeStartingHeight, addr_you.ToStringAddrPort(), tx_relay, block_relay, nodeid);
     } else {
-        LogDebug(BCLog::NET, "send version message: version %d, blocks=%d, txrelay=%d, peer=%d\n", PROTOCOL_VERSION, nNodeStartingHeight, tx_relay, nodeid);
+        LogDebug(BCLog::NET, "send version message: version %d, blocks=%d, txrelay=%d, blockrelay=%d, peer=%d\n", PROTOCOL_VERSION, nNodeStartingHeight, tx_relay, block_relay, nodeid);
     }
 }
 
@@ -3451,6 +3460,17 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     PeerRef peer = GetPeerRef(pfrom.GetId());
     if (peer == nullptr) return;
 
+    if (m_opts.ignore_incoming_blocks &&
+        (msg_type == NetMsgType::HEADERS ||
+         msg_type == NetMsgType::CMPCTBLOCK ||
+         msg_type == NetMsgType::GETHEADERS ||
+         msg_type == NetMsgType::GETBLOCKS ||
+         msg_type == NetMsgType::GETBLOCKTXN ||
+         msg_type == NetMsgType::BLOCKTXN ||
+         msg_type == NetMsgType::BLOCK)) {
+        return;
+    }
+
     if (msg_type == NetMsgType::VERSION) {
         if (pfrom.nVersion != 0) {
             LogDebug(BCLog::NET, "redundant version message from peer=%d\n", pfrom.GetId());
@@ -3465,6 +3485,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         std::string cleanSubVer;
         int starting_height = -1;
         bool fRelay = true;
+        bool block_relay = true;
 
         vRecv >> nVersion >> Using<CustomUintFormatter<8>>(nServices) >> nTime;
         if (nTime < 0) {
@@ -3514,6 +3535,8 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         }
         if (!vRecv.empty())
             vRecv >> fRelay;
+        if (!vRecv.empty())
+            vRecv >> block_relay;
         // Disconnect if we connected to ourself
         if (pfrom.IsInboundConn() && !m_connman.CheckIncomingNonce(nNonce))
         {
@@ -3560,6 +3583,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         }
         peer->m_starting_height = starting_height;
 
+        peer->m_relays_blocks = block_relay;
         // Only initialize the Peer::TxRelay m_relay_txs data structure if:
         // - this isn't an outbound block-relay-only connection, and
         // - this isn't an outbound feeler connection, and
@@ -3975,6 +3999,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         for (CInv& inv : vInv) {
             if (interruptMsgProc) return;
 
+            if (m_opts.ignore_incoming_blocks && (inv.IsMsgBlk() || inv.IsMsgCmpctBlk())) return;
             // Ignore INVs that don't match wtxidrelay setting.
             // Note that orphan parent fetching always uses MSG_TX GETDATAs regardless of the wtxidrelay setting.
             // This is fine as no INV messages are involved in that process.
