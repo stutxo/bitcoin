@@ -1,80 +1,62 @@
-Bitcoin Knots
-=============
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/c19f8b34-2079-4dd7-b2e5-cb1afec885a3" width="200"/>
+</p>
 
-https://bitcoinknots.org
+# Bitcoin Knobs
 
-For an immediately usable, binary version of the Bitcoin Knots software, see
-the website.
+Bitcoin Knobs is a fork of [Bitcoin Knots](https://bitcoinknots.org) that takes flexibility a step further. Where others decide what is "safe" or "reasonable," we believe in maximum choice. If that means your node refuses to start, your wallet vanishes into the void, or your peers pretend you don't exist, at least the decision was yours.  
 
-What is Bitcoin Knots?
-----------------------
+---
 
-Bitcoin Knots connects to the Bitcoin peer-to-peer network to download and fully
-validate blocks and transactions. It also includes a wallet and graphical user
-interface, which can be optionally built.
+## What is Bitcoin Knobs?
 
-Further information about Bitcoin Knots is available in the [doc folder](/doc).
+Bitcoin Knobs connects to the Bitcoin peer-to-peer network to download and fully validate blocks and transactions. It includes a wallet and graphical user interface, which can be optionally built.  
 
-License
--------
+Unlike projects that aim to protect you from yourself, Knobs is built on the principle that users should have full control over configuration, even if that control comes with outcomes best described as "interesting."  
 
-Bitcoin Knots is released under the terms of the MIT license. See [COPYING](COPYING) for more
-information or see https://opensource.org/licenses/MIT.
+---
 
-Development Process
--------------------
+## Why?
 
-Development generally takes place as part of [Bitcoin Core](https://github.com/bitcoin/bitcoin), and is merged into
-Knots for each release.
+Because freedom means being able to tune every setting, even the ones nobody sane would touch. Some people call that dangerous. We call it feature-complete.  
 
-Even if your pull request to Core is closed, or if your feature is not
-suitable for Core (eg, because it builds on a feature not supported in Core;
-relies on centralised services; etc), it may still be eligible for inclusion
-in Bitcoin Knots. In this case, a pull request may be opened on the
-[Knots GitHub](https://github.com/bitcoinknots/bitcoin) for review and consideration.
-When accepted, you are expected to maintain the submitted branch in your own
-repository, and it will be automatically merged into new releases of Knots.
+---
 
-Developer IRC can be found on Freenode at #bitcoin-dev.
+## Features
 
-Testing
--------
+- More knobs and toggles than you will ever need  
+- Configurations that can make your node sing, stumble, or collapse  
+- A wallet and GUI, just like Knots, but without the training wheels  
+- Defaults exist, but you are free to ignore them  
 
-Testing and code review is the bottleneck for development; we get more pull
-requests than we can review and test on short notice. Please be patient and help out by testing
-other people's pull requests, and remember this is a security-critical project where any mistake might cost people
-lots of money.
+---
 
-### Automated Testing
+## Development Process
 
-Developers are strongly encouraged to write [unit tests](src/test/README.md) for new code, and to
-submit new unit tests for old code. Unit tests can be compiled and run
-(assuming they weren't disabled during the generation of the build system) with: `ctest`. Further details on running
-and extending unit tests can be found in [/src/test/README.md](/src/test/README.md).
+Development builds on [Bitcoin Core](https://github.com/bitcoin/bitcoin), merged into Knobs with additional options along the way.  
 
-There are also [regression and integration tests](/test), written
-in Python.
-These tests can be run (if the [test dependencies](/test) are installed) with: `build/test/functional/test_runner.py`
-(assuming `build` is your build directory).
+Pull requests considered unsuitable for Core, too unconventional for Knots, or generally frowned upon elsewhere may still find a home here. If merged, contributors are expected to maintain their changes for future releases.  
 
-The CI (Continuous Integration) systems make sure that every pull request is built for Windows, Linux, and macOS,
-and that unit/sanity tests are run automatically.
+---
 
-### Manual Quality Assurance (QA) Testing
+## Testing
 
-Changes should be tested by somebody other than the developer who wrote the
-code. This is especially important for large or high-risk changes. It is useful
-to add a test plan to the pull request description if testing the changes is
-not straightforward.
+Testing is encouraged. Results may vary.  
 
-Translations
-------------
+- **Automated tests**: unit, regression, integration (see `/src/test` and `/test`).  
+- **CI**: builds for Linux, macOS, and Windows.  
+- **Manual QA**: useful, especially for the more adventurous changes.  
 
-Changes to translations as well as new translations can be submitted to
-[Bitcoin Core's Transifex page](https://explore.transifex.com/bitcoin/bitcoin/).
+Remember, outcomes are not guaranteed.  
 
-Translations are periodically pulled from Transifex and merged into the git repository. See the
-[translation process](doc/translation_process.md) for details on how this works.
+---
 
-**Important**: We do not accept translation changes as GitHub pull requests because the next
-pull from Transifex would automatically overwrite them again.
+## License
+
+MIT. See [COPYING](COPYING) or https://opensource.org/licenses/MIT.  
+
+---
+
+## Translations
+
+Handled via [Bitcoin Core's Transifex](https://explore.transifex.com/bitcoin/bitcoin/). GitHub PRs for translations are not accepted, as they are periodically overwritten.  
