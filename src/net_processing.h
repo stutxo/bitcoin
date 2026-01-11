@@ -76,6 +76,8 @@ public:
     struct Options {
         //! Whether this node is running in -blocksonly mode
         bool ignore_incoming_txs{DEFAULT_BLOCKSONLY};
+        //! Whether this node is running in -transactionsonly mode
+        bool ignore_incoming_blocks{DEFAULT_TRANSACTIONSONLY};
         //! Whether transaction reconciliation protocol is enabled
         bool reconcile_txs{DEFAULT_TXRECONCILIATION_ENABLE};
         //! Number of non-mempool transactions to keep around for block reconstruction. Includes
